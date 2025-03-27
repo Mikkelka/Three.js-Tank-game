@@ -90,16 +90,27 @@ export function updatePlayer(delta) {
 export function firePlayerWeapon() {
     if (!window.playerTank) return;
     
+    const now = Date.now();
     const weaponType = window.playerTank.userData.currentWeapon;
+    const weapon = WEAPONS[weaponType];
+    
+    // Check om vi kan skyde baseret på fireRate
+    if (window.playerTank.userData.lastFired && 
+        now - window.playerTank.userData.lastFired < weapon.fireRate) {
+        return; // For tidligt at skyde igen
+    }
+    
     const success = fireWeapon(window.playerTank, weaponType);
     
     if (success) {
+        // Opdater sidste skudtidspunkt
+        window.playerTank.userData.lastFired = now;
+        
         // Opdater UI
         updateAmmoDisplay(window.playerTank);
         
         // Genopfyld efter delay
         if (window.playerTank.userData.ammo <= 0) {
-            const weapon = WEAPONS[weaponType];
             setTimeout(() => {
                 if (window.playerTank) {
                     window.playerTank.userData.ammo = weapon.ammoCapacity;

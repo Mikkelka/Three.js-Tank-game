@@ -7,11 +7,11 @@ import { handleProjectileImpact } from '../effects/integration.js';
 export let projectiles = [];
 
 // Opret projektil
-export function createProjectile(position, direction, shooter, damage = 40, speed = 40) {
-    const geometry = new THREE.SphereGeometry(0.2, 16, 16);
+export function createProjectile(position, direction, shooter, damage = 40, speed = 40, size = 0.2, color = 0xFFAA00, explosionSize = 0.7) {
+    const geometry = new THREE.SphereGeometry(size, 16, 16);
     const material = new THREE.MeshStandardMaterial({
-        color: 0xFFAA00,
-        emissive: 0xFFAA00,
+        color: color,
+        emissive: color,
         emissiveIntensity: 0.5
     });
     
@@ -23,8 +23,9 @@ export function createProjectile(position, direction, shooter, damage = 40, spee
         direction: direction.clone().normalize(),
         speed: speed,
         shooter: shooter,
-        damage: damage, // Brug den overleverede skadeparameter
-        timeCreated: Date.now()
+        damage: damage,
+        timeCreated: Date.now(),
+        explosionSize: explosionSize
     };
     
     projectiles.push(projectile);

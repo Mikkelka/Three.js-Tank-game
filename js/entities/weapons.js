@@ -4,13 +4,16 @@ import { SoundManager } from '../effects/sound.js';
 import { checkObstacleCollision } from './obstacles.js';
 import { updateAmmoDisplay } from '../ui.js';
 
-// Våbentyper
+// Våbentyper - Tilføj nye våbentyper her
 export const WEAPON_TYPES = {
     STANDARD: 'standard',
     SHOTGUN: 'shotgun',
+    MACHINEGUN: 'machinegun',
+    ROCKETLAUNCHER: 'rocketlauncher',
+    LASER: 'laser'
 };
 
-// Våbenindstillinger
+// Våbenindstillinger - Tilføj nye våbenkonfigurationer her
 export const WEAPONS = {
     [WEAPON_TYPES.STANDARD]: {
         name: 'Standard Kanon',
@@ -20,6 +23,10 @@ export const WEAPONS = {
         projectileSpeed: 40,
         spread: 0,
         projectileCount: 1,
+        fireRate: 500, // Tid mellem skud i ms
+        projectileSize: 0.2,
+        projectileColor: 0xFFAA00,
+        explosionSize: 0.7,
         fireSound: 'shoot',
         uiColor: 0x00FF00
     },
@@ -31,8 +38,57 @@ export const WEAPONS = {
         projectileSpeed: 35,
         spread: 0.3, // Vinkel i radianer
         projectileCount: 5,
+        fireRate: 800,
+        projectileSize: 0.15,
+        projectileColor: 0xFF6600,
+        explosionSize: 0.5,
         fireSound: 'shotgun',
         uiColor: 0xFF3300
+    },
+    [WEAPON_TYPES.MACHINEGUN]: {
+        name: 'Maskingevær',
+        ammoCapacity: 20,
+        reloadTime: 3500,
+        damage: 10,
+        projectileSpeed: 50,
+        spread: 0.1,
+        projectileCount: 1,
+        fireRate: 100, // Hurtig skudhastighed
+        projectileSize: 0.15,
+        projectileColor: 0xCCCCCC,
+        explosionSize: 0.4,
+        fireSound: 'machinegun',
+        uiColor: 0x999999
+    },
+    [WEAPON_TYPES.ROCKETLAUNCHER]: {
+        name: 'Raketkaster',
+        ammoCapacity: 2,
+        reloadTime: 5000,
+        damage: 80,
+        projectileSpeed: 25,
+        spread: 0,
+        projectileCount: 1,
+        fireRate: 1000,
+        projectileSize: 0.3,
+        projectileColor: 0xFF0000,
+        explosionSize: 2.5,
+        fireSound: 'rocket',
+        uiColor: 0xCC0000
+    },
+    [WEAPON_TYPES.LASER]: {
+        name: 'Laser',
+        ammoCapacity: 10,
+        reloadTime: 2000,
+        damage: 25,
+        projectileSpeed: 80, // Meget hurtigt
+        spread: 0,
+        projectileCount: 1,
+        fireRate: 300,
+        projectileSize: 0.1,
+        projectileColor: 0x00FFFF,
+        explosionSize: 0.5,
+        fireSound: 'laser',
+        uiColor: 0x00FFFF
     }
 };
 
@@ -43,8 +99,7 @@ export let weaponPickups = [];
 export function fireWeapon(tank, weaponType = WEAPON_TYPES.STANDARD) {
     if (!tank || tank.userData.ammo <= 0) return false;
     
-    const weapon = WEAPONS[weaponType];
-    if (!weapon) return false;
+    const weapon = WEAPONS[weaponType] || WEAPONS[WEAPON_TYPES.STANDARD];
     
     const turret = tank.userData.turret;
     const cannon = tank.userData.cannon;
@@ -75,12 +130,10 @@ export function fireWeapon(tank, weaponType = WEAPON_TYPES.STANDARD) {
                 angle = -spreadAngle/2 + (spreadAngle * i / (weapon.projectileCount - 1));
             }
             
-            // ÆNDRET: Brug en horisontal rotationsakse i stedet for vertikal
-            // Vi bruger en opret vektor som reference for at få en horisontal spredning
+            // Brug en opret vektor som reference for at få en horisontal spredning
             const upVector = new THREE.Vector3(0, 1, 0);
             
             // For at få horisontal spredning, roterer vi omkring en lodret akse (y-aksen)
-            // i stedet for en der er vinkelret på kanonen
             const rotationQuaternion = new THREE.Quaternion().setFromAxisAngle(upVector, angle);
             
             // Anvend rotationen for at få projektilretningen
@@ -93,7 +146,10 @@ export function fireWeapon(tank, weaponType = WEAPON_TYPES.STANDARD) {
             projectileDirection, 
             tank,
             weapon.damage,
-            weapon.projectileSpeed
+            weapon.projectileSpeed,
+            weapon.projectileSize,
+            weapon.projectileColor,
+            weapon.explosionSize
         );
     }
     
@@ -194,6 +250,8 @@ export function switchWeapon(weaponType) {
     // Sæt nyt våben
     window.playerTank.userData.currentWeapon = weaponType;
     window.playerTank.userData.ammo = WEAPONS[weaponType].ammoCapacity;
+    window.playerTank.userData.fireRate = WEAPONS[weaponType].fireRate;
+    window.playerTank.userData.lastFired = 0; // Reset lastFired timer
     
     // Opdater UI
     updateAmmoDisplay(window.playerTank);

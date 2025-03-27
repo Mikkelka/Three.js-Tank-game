@@ -280,6 +280,9 @@ export function handleProjectileImpact(projectile, target, isDestroyed = false) 
     // Position for effekter
     const position = projectile.position.clone();
     
+    // Få eksplosionsstørrelsen fra projektilet eller brug standardværdi
+    const explosionSize = projectile.userData.explosionSize || 0.7;
+    
     if (target) {
         // Lyd for træfning
         if (target.userData.soundController) {
@@ -306,7 +309,7 @@ export function handleProjectileImpact(projectile, target, isDestroyed = false) 
         }
     } else {
         // Mindre eksplosion ved impact uden target
-        createExplosion(position, 0.7, 700);
+        createExplosion(position, explosionSize, 700);
         SoundManager.play('hit', { volume: 0.2 });
     }
 }

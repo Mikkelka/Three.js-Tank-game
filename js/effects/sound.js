@@ -78,6 +78,15 @@ export const SoundManager = {
             case 'weaponSwitch':
                 source = this.createWeaponSwitchSound(gainNode, settings);
                 break;
+            case 'machinegun':
+                source = this.createMachineGunSound(gainNode, settings);
+                break;
+            case 'rocket':
+                source = this.createRocketSound(gainNode, settings);
+                break;
+            case 'laser':
+                source = this.createLaserSound(gainNode, settings);
+                break;
             default:
                 console.warn(`Ukendt lydtype: ${soundType}`);
                 return null;
@@ -433,11 +442,154 @@ export const SoundManager = {
         
         return oscillator;
     },
+
+    // Generator for maskingevær-lyd
+createMachineGunSound: function(gainNode, settings) {
+    const duration = 0.15;
     
-    // Hjælpefunktion til at afspille simple sweep-toner
-    playSweepTone: function(startFreq, endFreq, duration, gainNode, startDelay) {
-        const osc = this.audioContext.createOscillator();
-        osc.type = 'sine';
+    // Kort, skarp oscillator
+    const oscillator = this.audioContext.createOscillator();
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(130, this.audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(100, this.audioContext.currentTime + duration);
+    
+    // Hvid støj som tilføjes
+    const noiseBuffer = this.audioContext.createBuffer(1, this.audioContext.sampleRate * 0.1, this.audioContext.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseBuffer.length; i++) {
+        noiseData[i] = Math.random() * 2 - 1;
+    }
+    
+    const noise = this.audioContext.createBufferSource();
+    noise.buffer = noiseBuffer;
+    
+    // Filtre
+    const filter = this.audioContext.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1000;
+    filter.Q.value = 5;
+    
+    // Volume envelope
+    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(settings.volume, this.audioContext.currentTime + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+    
+    // Forbind oscillator -> filter -> gain
+    oscillator.connect(filter);
+    noise.connect(filter);
+    filter.connect(gainNode);
+    
+    // Start og stop oscillator
+    oscillator.start();
+    noise.start();
+    oscillator.stop(this.audioContext.currentTime + duration);
+    noise.stop(this.audioContext.currentTime + duration);
+    
+    return oscillator;
+},
+
+// Generator for raketter-lyd
+createRocketSound: function(gainNode, settings) {
+    const duration = 0.6;
+    
+    // Lav "whoosh" lyd
+    const oscillator = this.audioContext.createOscillator();
+    oscillator.type = 'sawtooth';
+    oscillator.frequency.setValueAtTime(80, this.audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(120, this.audioContext.currentTime + duration * 0.3);
+    oscillator.frequency.exponentialRampToValueAtTime(40, this.audioContext.currentTime + duration);
+    
+    // Hvid støj til raketmotor
+    const noiseBuffer = this.audioContext.createBuffer(1, this.audioContext.sampleRate * duration, this.audioContext.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseBuffer.length; i++) {
+        noiseData[i] = Math.random() * 2 - 1;
+    }
+    
+    const noise = this.audioContext.createBufferSource();
+    noise.buffer = noiseBuffer;
+    
+    // Filtre
+    const noiseFilter = this.audioContext.createBiquadFilter();
+    noiseFilter.type = 'lowpass';
+    noiseFilter.frequency.value = 400;
+    
+    const mainFilter = this.audioContext.createBiquadFilter();
+    mainFilter.type = 'lowpass';
+    mainFilter.frequency.setValueAtTime(800, this.audioContext.currentTime);
+    mainFilter.frequency.linearRampToValueAtTime(200, this.audioContext.currentTime + duration);
+    
+    // Volume envelope
+    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(settings.volume, this.audioContext.currentTime + 0.05);
+    gainNode.gain.linearRampToValueAtTime(settings.volume * 0.3, this.audioContext.currentTime + duration * 0.7);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+    
+    // Forbind alle komponenter
+    oscillator.connect(mainFilter);
+    noise.connect(noiseFilter);
+    noiseFilter.connect(mainFilter);
+    mainFilter.connect(gainNode);
+    
+    // Start og stop
+    oscillator.start();
+    noise.start();
+    oscillator.stop(this.audioContext.currentTime + duration);
+    noise.stop(this.audioContext.currentTime + duration);
+    
+    return oscillator;
+},
+
+// Generator for laser-lyd
+createLaserSound: function(gainNode, settings) {
+    const duration = 0.4;
+    
+    // Høj-frekvent oscillator
+    const oscillator = this.audioContext.createOscillator();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(1200, this.audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(400, this.audioContext.currentTime + duration);
+    
+    // Pulserende modulator for "sci-fi" effekt
+    const modulator = this.audioContext.createOscillator();
+    modulator.frequency.value = 30;
+    
+    const modulatorGain = this.audioContext.createGain();
+    modulatorGain.gain.value = 100;
+    
+    // Filter
+    const filter = this.audioContext.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1000;
+    filter.Q.value = 10;
+    
+    // Volume envelope
+    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(settings.volume, this.audioContext.currentTime + 0.02);
+    gainNode.gain.linearRampToValueAtTime(settings.volume * 0.2, this.audioContext.currentTime + duration * 0.7);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+    
+    // Forbind modulator til oscillator frekvens
+    modulator.connect(modulatorGain);
+    modulatorGain.connect(oscillator.frequency);
+    
+    // Forbind oscillator -> filter -> gain
+    oscillator.connect(filter);
+    filter.connect(gainNode);
+    
+    // Start og stop
+    oscillator.start();
+    modulator.start();
+    oscillator.stop(this.audioContext.currentTime + duration);
+    modulator.stop(this.audioContext.currentTime + duration);
+    
+    return oscillator;
+},
+
+// Hjælpefunktion til at afspille simple sweep-toner
+playSweepTone: function(startFreq, endFreq, duration, gainNode, startDelay) {
+    const osc = this.audioContext.createOscillator();
+    osc.type = 'sine';
         
         // Frekvensændring
         osc.frequency.setValueAtTime(startFreq, this.audioContext.currentTime + startDelay);
