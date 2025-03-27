@@ -3,6 +3,9 @@ import { updateHealthBar, updateEnemyCount } from '../ui.js';
 import { obstacles, damageObstacle } from './obstacles.js';
 import { handleProjectileImpact } from '../effects/integration.js';
 
+// Genbrugbar vektor for projektil bevægelse
+const projectileTempDir = new THREE.Vector3();
+
 // Projektiler array til at holde styr på alle projektiler
 export let projectiles = [];
 
@@ -39,11 +42,10 @@ export function updateProjectiles(delta) {
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const projectile = projectiles[i];
         
-        // Bevæg projektil
+        // Bevæg projektil (genbrug vektor i stedet for direkte addition)
         const speed = projectile.userData.speed * delta;
-        projectile.position.x += projectile.userData.direction.x * speed;
-        projectile.position.y += projectile.userData.direction.y * speed;
-        projectile.position.z += projectile.userData.direction.z * speed;
+        projectileTempDir.copy(projectile.userData.direction).multiplyScalar(speed);
+        projectile.position.add(projectileTempDir);
         
         // Check levetid
         if (Date.now() - projectile.userData.timeCreated > 3000) {

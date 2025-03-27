@@ -9,6 +9,12 @@ import { updatePlayerSounds, handleWeaponFire } from '../effects/integration.js'
 import { SoundManager } from '../effects/sound.js';
 import { WEAPON_TYPES, WEAPONS, fireWeapon, updateWeaponDisplay } from './weapons.js';
 
+// Genbrugbare vektorer
+const playerTempDir = new THREE.Vector3();
+const playerTempNewPos = new THREE.Vector3();
+const playerCameraOffset = new THREE.Vector3(0, 20, -20);
+const tempUpVector = new THREE.Vector3(0, 1, 0);
+
 // Opret spillertank
 export function createPlayer() {
     const player = createTank(0, 0, 0, 0x2E8B57);
@@ -59,31 +65,29 @@ export function updatePlayer(delta) {
     
     // Frem/tilbage
     if (keys.forward || keys.backward) {
-        const direction = new THREE.Vector3(0, 0, keys.forward ? 1 : -1);
-        direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), window.playerTank.userData.rotation);
+        playerTempDir.set(0, 0, keys.forward ? 1 : -1);
+        playerTempDir.applyAxisAngle(tempUpVector, window.playerTank.userData.rotation);
         
-        // Beregn ny position
-        const newPosition = window.playerTank.position.clone();
-        newPosition.x += direction.x * moveSpeed;
-        newPosition.z += direction.z * moveSpeed;
+        // Beregn ny position - GENBRUG VEKTOR
+        playerTempNewPos.copy(window.playerTank.position);
+        playerTempNewPos.x += playerTempDir.x * moveSpeed;
+        playerTempNewPos.z += playerTempDir.z * moveSpeed;
         
         // Check kollision med forhindringer
-        if (!checkObstacleCollision(newPosition, 2)) {
+        if (!checkObstacleCollision(playerTempNewPos, 2)) {
             // Kun opdater position hvis der ikke er kollision
-            window.playerTank.position.copy(newPosition);
+            window.playerTank.position.copy(playerTempNewPos);
         }
     }
     
-    // Opdater kamera position
-    const cameraOffset = new THREE.Vector3(0, 20, -20);
-    cameraOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), window.playerTank.userData.rotation);
-    camera.position.copy(window.playerTank.position).add(cameraOffset);
+    // Opdater kamera position - GENBRUG VEKTOR
+    playerCameraOffset.set(0, 20, -20);
+    playerCameraOffset.applyAxisAngle(tempUpVector, window.playerTank.userData.rotation);
+    camera.position.copy(window.playerTank.position).add(playerCameraOffset);
     camera.lookAt(window.playerTank.position);
     
     // Opdater lyde baseret på inputs
     updatePlayerSounds(window.playerTank, keys);
-    
-    // Drej tårnet med musen (kan tilføjes senere)
 }
 
 // Affyr spillerens våben

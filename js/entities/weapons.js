@@ -4,6 +4,16 @@ import { SoundManager } from '../effects/sound.js';
 import { checkObstacleCollision } from './obstacles.js';
 import { updateAmmoDisplay } from '../ui.js';
 
+// Cachede DOM-elementer
+let weaponNameElement = null;
+let weaponIconElement = null;
+
+// Funktion til at sætte referencer til UI-elementer
+export function setWeaponUIElements(nameElement, iconElement) {
+    weaponNameElement = nameElement;
+    weaponIconElement = iconElement;
+}
+
 // Våbentyper - Tilføj nye våbentyper her
 export const WEAPON_TYPES = {
     STANDARD: 'standard',
@@ -266,8 +276,18 @@ export function updateWeaponDisplay(player) {
     const weaponType = player.userData.currentWeapon;
     const weapon = WEAPONS[weaponType];
     
-    document.getElementById('weapon-name').textContent = weapon.name;
-    document.getElementById('weapon-icon').style.backgroundColor = '#' + weapon.uiColor.toString(16).padStart(6, '0');
+    // Brug cachede elementer hvis tilgængelige
+    if (weaponNameElement) {
+        weaponNameElement.textContent = weapon.name;
+    } else {
+        document.getElementById('weapon-name').textContent = weapon.name;
+    }
+    
+    if (weaponIconElement) {
+        weaponIconElement.style.backgroundColor = '#' + weapon.uiColor.toString(16).padStart(6, '0');
+    } else {
+        document.getElementById('weapon-icon').style.backgroundColor = '#' + weapon.uiColor.toString(16).padStart(6, '0');
+    }
 }
 
 // Spawn våben-pickup på tilfældig position

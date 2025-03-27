@@ -5,6 +5,15 @@ import { ENEMY_COUNT } from '../game.js';
 import { updateEnemyCount } from '../ui.js';
 import { checkObstacleCollision } from './obstacles.js';
 
+// Genbrugelige vektorer
+const tempVec3 = new THREE.Vector3();
+const tempTargetDir = new THREE.Vector3();
+const tempMoveDir = new THREE.Vector3(0, 0, 1);
+const tempUpVector = new THREE.Vector3(0, 1, 0);
+const tempRotQuat = new THREE.Quaternion();
+const tempAwayPos = new THREE.Vector3();
+const tempNewPosition = new THREE.Vector3();
+
 // Fjende-tilstande
 const ENEMY_STATES = {
     PATROL: 'patrol',
@@ -101,19 +110,17 @@ function findCoverPosition(enemy, targetPosition) {
     const searchAngles = [0, Math.PI/4, Math.PI/2, 3*Math.PI/4, Math.PI, 5*Math.PI/4, 3*Math.PI/2, 7*Math.PI/4];
     const searchDistance = 15;
     
-    // Find retning væk fra spilleren
-    const dirFromPlayer = new THREE.Vector3();
-    dirFromPlayer.subVectors(enemy.position, targetPosition).normalize();
+    // Find retning væk fra spilleren - GENBRUG VEKTOR
+    tempVec3.subVectors(enemy.position, targetPosition).normalize();
     
-    // Prøv denne retning først (væk fra spilleren)
-    const awayPos = new THREE.Vector3();
-    awayPos.copy(enemy.position).addScaledVector(dirFromPlayer, searchDistance);
+    // Prøv denne retning først (væk fra spilleren) - GENBRUG VEKTOR
+    tempAwayPos.copy(enemy.position).addScaledVector(tempVec3, searchDistance);
     
     // Sørg for at positionen er inden for banens grænser
-    awayPos.x = Math.max(-45, Math.min(45, awayPos.x));
-    awayPos.z = Math.max(-45, Math.min(45, awayPos.z));
+    tempAwayPos.x = Math.max(-45, Math.min(45, tempAwayPos.x));
+    tempAwayPos.z = Math.max(-45, Math.min(45, tempAwayPos.z));
     
-    return awayPos;
+    return tempAwayPos.clone(); // Vi returnerer stadig en kopi
 }
 
 // Opdater fjender
@@ -219,12 +226,11 @@ function handlePatrolState(enemy, moveSpeed, rotSpeed) {
         return;
     }
     
-    // Beregn retning til målet
-    const targetDir = new THREE.Vector3();
-    targetDir.subVectors(currentPoint, enemy.position).normalize();
+    // Beregn retning til målet - GENBRUG VEKTOR
+    tempTargetDir.subVectors(currentPoint, enemy.position).normalize();
     
     // Beregn vinkel til målet
-    const targetAngle = Math.atan2(targetDir.x, targetDir.z);
+    const targetAngle = Math.atan2(tempTargetDir.x, tempTargetDir.z);
     
     // Roter mod målet
     rotateTowards(enemy, targetAngle, rotSpeed);
@@ -235,12 +241,11 @@ function handlePatrolState(enemy, moveSpeed, rotSpeed) {
 
 // Håndter jagt-tilstand
 function handleChaseState(enemy, moveSpeed, rotSpeed) {
-    // Beregn retning til spilleren
-    const targetDir = new THREE.Vector3();
-    targetDir.subVectors(window.playerTank.position, enemy.position).normalize();
+    // Beregn retning til spilleren - GENBRUG VEKTOR
+    tempTargetDir.subVectors(window.playerTank.position, enemy.position).normalize();
     
     // Beregn vinkel til spilleren
-    const targetAngle = Math.atan2(targetDir.x, targetDir.z);
+    const targetAngle = Math.atan2(tempTargetDir.x, tempTargetDir.z);
     
     // Roter mod spilleren
     rotateTowards(enemy, targetAngle, rotSpeed);
@@ -254,29 +259,27 @@ function handleAttackState(enemy, moveSpeed, rotSpeed) {
     const now = Date.now();
     const distToPlayer = enemy.position.distanceTo(window.playerTank.position);
     
-    // Beregn retning til spilleren
-    const targetDir = new THREE.Vector3();
-    targetDir.subVectors(window.playerTank.position, enemy.position).normalize();
+    // Beregn retning til spilleren - GENBRUG VEKTOR
+    tempTargetDir.subVectors(window.playerTank.position, enemy.position).normalize();
     
     // Beregn vinkel til spilleren
-    const targetAngle = Math.atan2(targetDir.x, targetDir.z);
+    const targetAngle = Math.atan2(tempTargetDir.x, tempTargetDir.z);
     
     // Ret tårnet mod spilleren
     enemy.userData.turret.rotation.y = targetAngle - enemy.rotation.y;
     
     // Hold god afstand - ikke for tæt på, ikke for langt væk
     if (distToPlayer < 12) {
-        // Træk sig lidt tilbage
-        const retreatDir = new THREE.Vector3();
-        retreatDir.subVectors(enemy.position, window.playerTank.position).normalize();
+        // Træk sig lidt tilbage - GENBRUG VEKTOR
+        tempVec3.subVectors(enemy.position, window.playerTank.position).normalize();
         
-        const newPosition = enemy.position.clone();
-        newPosition.x += retreatDir.x * moveSpeed;
-        newPosition.z += retreatDir.z * moveSpeed;
+        tempNewPosition.copy(enemy.position);
+        tempNewPosition.x += tempVec3.x * moveSpeed;
+        tempNewPosition.z += tempVec3.z * moveSpeed;
         
         // Check kollision
-        if (!checkObstacleCollision(newPosition, 2)) {
-            enemy.position.copy(newPosition);
+        if (!checkObstacleCollision(tempNewPosition, 2)) {
+            enemy.position.copy(tempNewPosition);
         } else {
             // Hvis blokeret, forsøg at rotere lidt
             enemy.userData.rotation += rotSpeed;
@@ -339,12 +342,11 @@ function handleRetreatState(enemy, moveSpeed, rotSpeed) {
             return;
         }
         
-        // Bevæg mod dækning
-        const targetDir = new THREE.Vector3();
-        targetDir.subVectors(enemy.userData.coverPosition, enemy.position).normalize();
+        // Bevæg mod dækning - GENBRUG VEKTOR
+        tempTargetDir.subVectors(enemy.userData.coverPosition, enemy.position).normalize();
         
         // Beregn vinkel til målet
-        const targetAngle = Math.atan2(targetDir.x, targetDir.z);
+        const targetAngle = Math.atan2(tempTargetDir.x, tempTargetDir.z);
         
         // Roter mod dækning
         rotateTowards(enemy, targetAngle, rotSpeed * 1.5);
@@ -352,12 +354,11 @@ function handleRetreatState(enemy, moveSpeed, rotSpeed) {
         // Bevæg fremad hurtigere (flygt)
         moveForward(enemy, moveSpeed * 1.5);
     } else {
-        // Intet dækningspunkt - bare bevæg væk fra spilleren
-        const awayDir = new THREE.Vector3();
-        awayDir.subVectors(enemy.position, window.playerTank.position).normalize();
+        // Intet dækningspunkt - bare bevæg væk fra spilleren - GENBRUG VEKTOR
+        tempVec3.subVectors(enemy.position, window.playerTank.position).normalize();
         
         // Beregn vinkel væk fra spilleren
-        const awayAngle = Math.atan2(awayDir.x, awayDir.z);
+        const awayAngle = Math.atan2(tempVec3.x, tempVec3.z);
         
         // Roter væk
         rotateTowards(enemy, awayAngle, rotSpeed * 1.5);
@@ -383,16 +384,16 @@ function rotateTowards(enemy, targetAngle, rotSpeed) {
 
 // Hjælpefunktion til at bevæge fremad
 function moveForward(enemy, moveSpeed) {
-    const moveDir = new THREE.Vector3(0, 0, 1);
-    moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), enemy.userData.rotation);
+    tempMoveDir.set(0, 0, 1); // Reset moveDir
+    tempMoveDir.applyAxisAngle(tempUpVector, enemy.userData.rotation);
     
-    const newPosition = enemy.position.clone();
-    newPosition.x += moveDir.x * moveSpeed;
-    newPosition.z += moveDir.z * moveSpeed;
+    tempNewPosition.copy(enemy.position);
+    tempNewPosition.x += tempMoveDir.x * moveSpeed;
+    tempNewPosition.z += tempMoveDir.z * moveSpeed;
     
     // Check kollision
-    if (!checkObstacleCollision(newPosition, 2)) {
-        enemy.position.copy(newPosition);
+    if (!checkObstacleCollision(tempNewPosition, 2)) {
+        enemy.position.copy(tempNewPosition);
     }
 }
 

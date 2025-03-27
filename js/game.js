@@ -2,7 +2,7 @@ import { initScene, scene, camera, renderer } from './scene.js';
 import { createPlayer, updatePlayer, initPlayerUI } from './entities/player.js';
 import { createEnemies, updateEnemies } from './entities/enemy.js';
 import { updateProjectiles, projectiles } from './entities/projectile.js';
-import { updateEnemyCount } from './ui.js';
+import { updateEnemyCount, initUIElements } from './ui.js';
 import { createObstacles, obstacles } from './entities/obstacles.js';
 import { initEffects } from './effects/integration.js';
 import { SoundManager } from './effects/sound.js';
@@ -19,6 +19,9 @@ export let score = 0;
 // Initialiser spillet
 export function initGame() {
     initScene();
+    
+    // Initialiser UI elementer før de bruges
+    initUIElements();
     
     // Opret forhindringer først så de er under andre objekter
     createObstacles();
@@ -171,8 +174,8 @@ function animate(time) {
         updatePlayer(delta);
         updateEnemies(delta);
         updateProjectiles(delta);
-        updatePickups(delta); // Tilføj denne linje
-        checkWeaponPickups(); // Tilføj denne linje
+        updatePickups(delta);
+        checkWeaponPickups();
     }
     
     // Render scene
