@@ -1,6 +1,7 @@
 import { THREE, scene } from '../scene.js';
 import { updateHealthBar, updateEnemyCount } from '../ui.js';
 import { obstacles, damageObstacle } from './obstacles.js';
+import { handleProjectileImpact } from '../effects/integration.js';
 
 // Projektiler array til at holde styr på alle projektiler
 export let projectiles = [];
@@ -84,7 +85,10 @@ export function updateProjectiles(delta) {
                 projectiles.splice(i, 1);
                 
                 // Forsøg at beskadige forhindringen
-                damageObstacle(obstacle, projectile.userData.damage);
+                const destroyed = damageObstacle(obstacle, projectile.userData.damage);
+                
+                // Visuelle og lyd-effekter
+                handleProjectileImpact(projectile, obstacle, destroyed);
                 
                 obstacleHit = true;
                 break;
@@ -106,12 +110,15 @@ export function updateProjectiles(delta) {
                 scene.remove(projectile);
                 projectiles.splice(i, 1);
                 
+                // Visuelle og lyd-effekter
+                handleProjectileImpact(projectile, window.playerTank, window.playerTank.userData.health <= 0);
+                
                 // Game over check
                 if (window.playerTank.userData.health <= 0) {
                     setTimeout(() => {
                         alert("Game Over! Din tank blev ødelagt!");
                         location.reload();
-                    }, 500);
+                    }, 1000);  // Giv tid til at se eksplosionen
                 }
                 
                 continue;
@@ -132,8 +139,13 @@ export function updateProjectiles(delta) {
                 scene.remove(projectile);
                 projectiles.splice(i, 1);
                 
+                const isDestroyed = enemy.userData.health <= 0;
+                
+                // Visuelle og lyd-effekter
+                handleProjectileImpact(projectile, enemy, isDestroyed);
+                
                 // Fjern fjenden hvis den er død
-                if (enemy.userData.health <= 0) {
+                if (isDestroyed) {
                     enemy.visible = false;
                     
                     // Opdater fjende-tæller
@@ -144,7 +156,7 @@ export function updateProjectiles(delta) {
                         setTimeout(() => {
                             alert("Sejr! Du har elimineret alle fjendtlige tanks!");
                             location.reload();
-                        }, 500);
+                        }, 1000);  // Giv tid til at se eksplosionen
                     }
                     
                     // Score

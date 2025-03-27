@@ -4,6 +4,8 @@ import { createEnemies, updateEnemies } from './entities/enemy.js';
 import { updateProjectiles, projectiles } from './entities/projectile.js';
 import { updateEnemyCount } from './ui.js';
 import { createObstacles } from './entities/obstacles.js';
+import { initEffects } from './effects/integration.js';
+import { SoundManager } from './effects/sound.js';
 
 // Konstanter
 export const ENEMY_COUNT = 5;
@@ -30,6 +32,9 @@ export function initGame() {
     initPlayerUI(window.playerTank);
     document.getElementById('enemy-count').textContent = ENEMY_COUNT;
     
+    // Initialiser effekter
+    initEffects();
+    
     animate(0);
 }
 
@@ -37,6 +42,23 @@ export function initGame() {
 export function startGame() {
     gameState = 'playing';
     document.getElementById('start-screen').style.display = 'none';
+    
+    // Initialiser lydmanager (flyttet hertil så det sker ved brugerinteraktion)
+    SoundManager.init();
+    
+    // Start motorlyde
+    if (window.playerTank && window.playerTank.userData.soundController) {
+        window.playerTank.userData.soundController.startEngine();
+    }
+    
+    // Start motor for fjender
+    if (window.enemyTanks) {
+        window.enemyTanks.forEach(tank => {
+            if (tank.userData.soundController) {
+                tank.userData.soundController.startEngine();
+            }
+        });
+    }
 }
 
 // Animation loop

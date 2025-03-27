@@ -5,6 +5,8 @@ import { keys } from '../input.js';
 import { updateHealthBar, updateAmmoDisplay, updateBoostBar } from '../ui.js';
 import { PLAYER_MAX_HEALTH } from '../game.js';
 import { checkObstacleCollision } from './obstacles.js';
+import { updatePlayerSounds, handleWeaponFire } from '../effects/integration.js';
+import { SoundManager } from '../effects/sound.js';
 
 // Opret spillertank
 export function createPlayer() {
@@ -75,6 +77,9 @@ export function updatePlayer(delta) {
     camera.position.copy(window.playerTank.position).add(cameraOffset);
     camera.lookAt(window.playerTank.position);
     
+    // Opdater lyde baseret på inputs
+    updatePlayerSounds(window.playerTank, keys);
+    
     // Drej tårnet med musen (kan tilføjes senere)
 }
 
@@ -96,6 +101,9 @@ export function firePlayerWeapon() {
     // Skab projektil
     createProjectile(cannonPosition, cannonDirection, window.playerTank);
     
+    // Tilføj visuelle og lyd-effekter
+    handleWeaponFire(window.playerTank);
+    
     // Reducer ammunition
     window.playerTank.userData.ammo--;
     updateAmmoDisplay(window.playerTank);
@@ -105,6 +113,9 @@ export function firePlayerWeapon() {
         setTimeout(() => {
             window.playerTank.userData.ammo = 5;
             updateAmmoDisplay(window.playerTank);
+            
+            // Afspil genopfyldnings-lyd
+            SoundManager.play('reload', { volume: 0.3 });
         }, 2000);
     }
 }
