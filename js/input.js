@@ -18,15 +18,23 @@ export function setupEventListeners() {
         
         switch (event.key) {
             case 'ArrowUp':
+            case 'w':
+            case 'W':
                 keys.forward = true;
                 break;
             case 'ArrowDown':
+            case 's':
+            case 'S':
                 keys.backward = true;
                 break;
             case 'ArrowLeft':
+            case 'a':
+            case 'A':
                 keys.left = true;
                 break;
             case 'ArrowRight':
+            case 'd':
+            case 'D':
                 keys.right = true;
                 break;
             case ' ':
@@ -44,15 +52,23 @@ export function setupEventListeners() {
     document.addEventListener('keyup', (event) => {
         switch (event.key) {
             case 'ArrowUp':
+            case 'w':
+            case 'W':
                 keys.forward = false;
                 break;
             case 'ArrowDown':
+            case 's':
+            case 'S':
                 keys.backward = false;
                 break;
             case 'ArrowLeft':
+            case 'a':
+            case 'A':
                 keys.left = false;
                 break;
             case 'ArrowRight':
+            case 'd':
+            case 'D':
                 keys.right = false;
                 break;
             case ' ':
