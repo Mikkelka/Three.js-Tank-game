@@ -85,3 +85,24 @@ h1 {
     margin-bottom: 20px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
+
+/* Tilføj dette til styles/style.css */
+#weapon-info {
+    margin-bottom: 10px;
+}
+
+#weapon-icon {
+    background-color: #00FF00;
+    border-radius: 3px;
+    vertical-align: middle;
+}
+
+.weapon-pickup {
+    animation: hover 2s infinite ease-in-out;
+}
+
+@keyframes hover {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(0.5rem); }
+    100% { transform: translateY(0); }
+}

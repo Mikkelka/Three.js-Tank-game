@@ -6,6 +6,7 @@ import { updateEnemyCount } from './ui.js';
 import { createObstacles } from './entities/obstacles.js';
 import { initEffects } from './effects/integration.js';
 import { SoundManager } from './effects/sound.js';
+import { spawnWeaponPickup, updatePickups, checkWeaponPickups, updateWeaponDisplay } from './entities/weapons.js';
 
 // Konstanter
 export const ENEMY_COUNT = 5;
@@ -59,6 +60,9 @@ export function startGame() {
             }
         });
     }
+    
+    // Start spawn af våben-pickups
+    setTimeout(spawnWeaponPickup, 10000); // Første pickup efter 10 sekunder
 }
 
 // Animation loop
@@ -81,6 +85,8 @@ function animate(time) {
         updatePlayer(delta);
         updateEnemies(delta);
         updateProjectiles(delta);
+        updatePickups(delta); // Tilføj denne linje
+        checkWeaponPickups(); // Tilføj denne linje
     }
     
     // Render scene

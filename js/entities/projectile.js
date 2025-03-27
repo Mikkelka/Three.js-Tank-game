@@ -7,7 +7,7 @@ import { handleProjectileImpact } from '../effects/integration.js';
 export let projectiles = [];
 
 // Opret projektil
-export function createProjectile(position, direction, shooter) {
+export function createProjectile(position, direction, shooter, damage = 40, speed = 40) {
     const geometry = new THREE.SphereGeometry(0.2, 16, 16);
     const material = new THREE.MeshStandardMaterial({
         color: 0xFFAA00,
@@ -21,9 +21,9 @@ export function createProjectile(position, direction, shooter) {
     
     projectile.userData = {
         direction: direction.clone().normalize(),
-        speed: 40,
+        speed: speed,
         shooter: shooter,
-        damage: shooter.userData.isPlayer ? 40 : 20,
+        damage: damage, // Brug den overleverede skadeparameter
         timeCreated: Date.now()
     };
     

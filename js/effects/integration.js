@@ -323,7 +323,8 @@ export function updatePlayerSounds(player, keys) {
 // Affyr skud med lyd og visuelt feedback
 export function handleWeaponFire(tank) {
     if (tank.userData.soundController) {
-        tank.userData.soundController.playShootSound();
+        const weaponType = tank.userData.currentWeapon || 'standard';
+        tank.userData.soundController.playWeaponSound(weaponType);
     } else {
         SoundManager.play('shoot', { volume: 0.5 });
     }

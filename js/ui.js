@@ -1,4 +1,5 @@
 import { PLAYER_MAX_HEALTH } from './game.js';
+import { WEAPONS } from './entities/weapons.js';
 
 // Opdater health bar
 export function updateHealthBar(player) {
@@ -17,7 +18,11 @@ export function updateHealthBar(player) {
 
 // Opdater ammunition display
 export function updateAmmoDisplay(player) {
+    const weaponType = player.userData.currentWeapon;
+    const weapon = WEAPONS[weaponType];
+    
     document.getElementById('ammo-count').textContent = player.userData.ammo;
+    document.getElementById('ammo-capacity').textContent = weapon.ammoCapacity;
 }
 
 // Opdater boost bar

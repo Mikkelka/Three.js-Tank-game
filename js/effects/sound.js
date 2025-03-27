@@ -54,6 +54,9 @@ export const SoundManager = {
             case 'shoot':
                 source = this.createShootSound(gainNode, settings);
                 break;
+            case 'shotgun':
+                source = this.createShotgunSound(gainNode, settings);
+                break;
             case 'explode':
                 source = this.createExplosionSound(gainNode, settings);
                 break;
@@ -71,6 +74,9 @@ export const SoundManager = {
                 break;
             case 'powerup':
                 source = this.createPowerupSound(gainNode, settings);
+                break;
+            case 'weaponSwitch':
+                source = this.createWeaponSwitchSound(gainNode, settings);
                 break;
             default:
                 console.warn(`Ukendt lydtype: ${soundType}`);
@@ -133,6 +139,65 @@ export const SoundManager = {
         oscillator.stop(this.audioContext.currentTime + duration);
         
         return oscillator;
+    },
+    
+    // Generator til shotgun lyd
+    createShotgunSound: function(gainNode, settings) {
+        const duration = 0.4;
+        
+        // Flere overlappende oscillatorer for en mere kompleks lyd
+        const oscillator1 = this.audioContext.createOscillator();
+        oscillator1.type = 'sawtooth';
+        oscillator1.frequency.setValueAtTime(150, this.audioContext.currentTime);
+        oscillator1.frequency.exponentialRampToValueAtTime(40, this.audioContext.currentTime + duration);
+        
+        const oscillator2 = this.audioContext.createOscillator();
+        oscillator2.type = 'sawtooth';
+        oscillator2.frequency.setValueAtTime(180, this.audioContext.currentTime);
+        oscillator2.frequency.exponentialRampToValueAtTime(30, this.audioContext.currentTime + duration * 0.8);
+        
+        // Hvid støj til shotgun burst effekt
+        const noiseBuffer = this.audioContext.createBuffer(1, this.audioContext.sampleRate * 0.2, this.audioContext.sampleRate);
+        const noiseData = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < noiseBuffer.length; i++) {
+            noiseData[i] = Math.random() * 2 - 1;
+        }
+        
+        const noise = this.audioContext.createBufferSource();
+        noise.buffer = noiseBuffer;
+        
+        // Filtre
+        const filter1 = this.audioContext.createBiquadFilter();
+        filter1.type = 'lowpass';
+        filter1.frequency.setValueAtTime(2000, this.audioContext.currentTime);
+        filter1.frequency.exponentialRampToValueAtTime(300, this.audioContext.currentTime + duration);
+        filter1.Q.value = 1;
+        
+        const filter2 = this.audioContext.createBiquadFilter();
+        filter2.type = 'highpass';
+        filter2.frequency.value = 200;
+        
+        // Volume envelope
+        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(settings.volume, this.audioContext.currentTime + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+        
+        // Forbind alt
+        oscillator1.connect(filter1);
+        oscillator2.connect(filter1);
+        noise.connect(filter2);
+        filter2.connect(filter1);
+        filter1.connect(gainNode);
+        
+        // Start og stop
+        oscillator1.start();
+        oscillator2.start();
+        noise.start();
+        oscillator1.stop(this.audioContext.currentTime + duration);
+        oscillator2.stop(this.audioContext.currentTime + duration);
+        noise.stop(this.audioContext.currentTime + 0.2);
+        
+        return oscillator1; // Returner en af oscillatorerne som håndtag
     },
     
     // Generator for eksplosionslyd
@@ -330,6 +395,45 @@ export const SoundManager = {
         return oscillator;
     },
     
+    // Generator til våbenskifte-lyd
+    createWeaponSwitchSound: function(gainNode, settings) {
+        const duration = 0.3;
+        
+        // Sweep tone til skift
+        const oscillator = this.audioContext.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(900, this.audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(700, this.audioContext.currentTime + duration);
+        
+        // Klik-lyd overlay
+        const clickOsc = this.audioContext.createOscillator();
+        clickOsc.type = 'square';
+        clickOsc.frequency.value = 80;
+        
+        const clickGain = this.audioContext.createGain();
+        clickGain.gain.setValueAtTime(0, this.audioContext.currentTime);
+        clickGain.gain.linearRampToValueAtTime(settings.volume * 0.5, this.audioContext.currentTime + 0.01);
+        clickGain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+        
+        // Hoved-volume envelope
+        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(settings.volume * 0.3, this.audioContext.currentTime + 0.02);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+        
+        // Forbind
+        oscillator.connect(gainNode);
+        clickOsc.connect(clickGain);
+        clickGain.connect(gainNode);
+        
+        // Start og stop
+        oscillator.start();
+        clickOsc.start();
+        oscillator.stop(this.audioContext.currentTime + duration);
+        clickOsc.stop(this.audioContext.currentTime + 0.1);
+        
+        return oscillator;
+    },
+    
     // Hjælpefunktion til at afspille simple sweep-toner
     playSweepTone: function(startFreq, endFreq, duration, gainNode, startDelay) {
         const osc = this.audioContext.createOscillator();
@@ -408,6 +512,18 @@ export class TankSoundController {
     // Skud lyd
     playShootSound() {
         SoundManager.play('shoot', { volume: 0.5 });
+    }
+    
+    // Spil lydeffekt baseret på våbentype
+    playWeaponSound(weaponType) {
+        switch(weaponType) {
+            case 'shotgun':
+                SoundManager.play('shotgun', { volume: 0.5 });
+                break;
+            default:
+                SoundManager.play('shoot', { volume: 0.5 });
+                break;
+        }
     }
     
     // Hit lyd

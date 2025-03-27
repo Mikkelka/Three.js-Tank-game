@@ -7,6 +7,7 @@ import { PLAYER_MAX_HEALTH } from '../game.js';
 import { checkObstacleCollision } from './obstacles.js';
 import { updatePlayerSounds, handleWeaponFire } from '../effects/integration.js';
 import { SoundManager } from '../effects/sound.js';
+import { WEAPON_TYPES, WEAPONS, fireWeapon, updateWeaponDisplay } from './weapons.js';
 
 // Opret spillertank
 export function createPlayer() {
@@ -15,6 +16,7 @@ export function createPlayer() {
     player.userData.ammo = 5;
     player.userData.boost = 100;
     player.userData.isPlayer = true;
+    player.userData.currentWeapon = WEAPON_TYPES.STANDARD; // Tilføj nuværende våben
     
     return player;
 }
@@ -24,6 +26,7 @@ export function initPlayerUI(player) {
     updateHealthBar(player);
     updateAmmoDisplay(player);
     updateBoostBar(player);
+    updateWeaponDisplay(player);
 }
 
 // Opdater spillerbevægelse og kontrol
@@ -85,37 +88,27 @@ export function updatePlayer(delta) {
 
 // Affyr spillerens våben
 export function firePlayerWeapon() {
-    if (!window.playerTank || window.playerTank.userData.ammo <= 0) return;
+    if (!window.playerTank) return;
     
-    const turret = window.playerTank.userData.turret;
-    const cannon = window.playerTank.userData.cannon;
+    const weaponType = window.playerTank.userData.currentWeapon;
+    const success = fireWeapon(window.playerTank, weaponType);
     
-    // Find kanonens retning i verdenskoordinater
-    const cannonDirection = new THREE.Vector3(0, 0, 1);
-    cannonDirection.applyQuaternion(turret.getWorldQuaternion(new THREE.Quaternion()));
-    
-    // Find kanonens position i verden
-    const cannonPosition = new THREE.Vector3();
-    cannon.getWorldPosition(cannonPosition);
-    
-    // Skab projektil
-    createProjectile(cannonPosition, cannonDirection, window.playerTank);
-    
-    // Tilføj visuelle og lyd-effekter
-    handleWeaponFire(window.playerTank);
-    
-    // Reducer ammunition
-    window.playerTank.userData.ammo--;
-    updateAmmoDisplay(window.playerTank);
-    
-    // Genopfyld efter delay
-    if (window.playerTank.userData.ammo <= 0) {
-        setTimeout(() => {
-            window.playerTank.userData.ammo = 5;
-            updateAmmoDisplay(window.playerTank);
-            
-            // Afspil genopfyldnings-lyd
-            SoundManager.play('reload', { volume: 0.3 });
-        }, 2000);
+    if (success) {
+        // Opdater UI
+        updateAmmoDisplay(window.playerTank);
+        
+        // Genopfyld efter delay
+        if (window.playerTank.userData.ammo <= 0) {
+            const weapon = WEAPONS[weaponType];
+            setTimeout(() => {
+                if (window.playerTank) {
+                    window.playerTank.userData.ammo = weapon.ammoCapacity;
+                    updateAmmoDisplay(window.playerTank);
+                    
+                    // Afspil genopfyldnings-lyd
+                    SoundManager.play('reload', { volume: 0.3 });
+                }
+            }, weapon.reloadTime);
+        }
     }
 }
