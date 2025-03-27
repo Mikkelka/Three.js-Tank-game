@@ -1,4 +1,4 @@
-import { gameState } from './game.js';
+import { gameState, resetGame } from './game.js';
 import { firePlayerWeapon } from './entities/player.js';
 
 // Input-tilstand
@@ -45,6 +45,10 @@ export function setupEventListeners() {
                 break;
             case 'Shift':
                 keys.boost = true;
+                break;
+            case 'r':
+            case 'R':
+                resetGame();
                 break;
         }
     });

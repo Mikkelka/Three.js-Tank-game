@@ -3,10 +3,10 @@ import { createPlayer, updatePlayer, initPlayerUI } from './entities/player.js';
 import { createEnemies, updateEnemies } from './entities/enemy.js';
 import { updateProjectiles, projectiles } from './entities/projectile.js';
 import { updateEnemyCount } from './ui.js';
-import { createObstacles } from './entities/obstacles.js';
+import { createObstacles, obstacles } from './entities/obstacles.js';
 import { initEffects } from './effects/integration.js';
 import { SoundManager } from './effects/sound.js';
-import { spawnWeaponPickup, updatePickups, checkWeaponPickups, updateWeaponDisplay } from './entities/weapons.js';
+import { spawnWeaponPickup, updatePickups, checkWeaponPickups, updateWeaponDisplay, weaponPickups, WEAPON_TYPES } from './entities/weapons.js';
 
 // Konstanter
 export const ENEMY_COUNT = 5;
@@ -63,6 +63,92 @@ export function startGame() {
     
     // Start spawn af våben-pickups
     setTimeout(spawnWeaponPickup, 10000); // Første pickup efter 10 sekunder
+}
+
+// Reset spillet
+export function resetGame() {
+    // Fjern eksisterende objekter fra scenen
+    clearScene();
+    
+    // Reset score
+    score = 0;
+    
+    // Opret nye forhindringer
+    createObstacles();
+    
+    // Opret ny spiller
+    window.playerTank = createPlayer();
+    initPlayerUI(window.playerTank);
+    
+    // Opret nye fjender
+    window.enemyTanks = createEnemies();
+    document.getElementById('enemy-count').textContent = ENEMY_COUNT;
+    
+    // Initialiser effekter igen
+    initEffects();
+    
+    // Start motorlyde
+    if (window.playerTank && window.playerTank.userData.soundController) {
+        window.playerTank.userData.soundController.startEngine();
+    }
+    
+    // Start motor for fjender
+    if (window.enemyTanks) {
+        window.enemyTanks.forEach(tank => {
+            if (tank.userData.soundController) {
+                tank.userData.soundController.startEngine();
+            }
+        });
+    }
+    
+    // Fjern alle ventende timeouts for våben-pickups ved at tømme arrayet
+    weaponPickups.length = 0;
+    
+    // Start nye våben-pickups
+    setTimeout(spawnWeaponPickup, 10000);
+    
+    // Sikrer at gameState forbliver 'playing'
+    gameState = 'playing';
+}
+
+// Hjælpefunktion til at fjerne alle objekter fra scenen
+function clearScene() {
+    // Fjern projektiler
+    while (projectiles.length > 0) {
+        const projectile = projectiles.pop();
+        scene.remove(projectile);
+    }
+    
+    // Fjern pickups
+    while (weaponPickups.length > 0) {
+        const pickup = weaponPickups.pop();
+        scene.remove(pickup);
+    }
+    
+    // Fjern spillertank
+    if (window.playerTank) {
+        if (window.playerTank.userData.soundController) {
+            window.playerTank.userData.soundController.stopAllSounds();
+        }
+        scene.remove(window.playerTank);
+    }
+    
+    // Fjern fjender
+    if (window.enemyTanks) {
+        window.enemyTanks.forEach(tank => {
+            if (tank.userData.soundController) {
+                tank.userData.soundController.stopAllSounds();
+            }
+            scene.remove(tank);
+        });
+    }
+    
+    // Fjern forhindringer (undtagen ydre grænser)
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        const obstacle = obstacles[i];
+        scene.remove(obstacle);
+        obstacles.splice(i, 1);
+    }
 }
 
 // Animation loop
