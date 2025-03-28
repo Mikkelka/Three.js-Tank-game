@@ -9,8 +9,8 @@ import { SoundManager } from './effects/sound.js';
 import { spawnWeaponPickup, updatePickups, checkWeaponPickups, updateWeaponDisplay, weaponPickups, WEAPON_TYPES } from './entities/weapons.js';
 
 // Konstanter
-export const ENEMY_COUNT = 5;
-export const PLAYER_MAX_HEALTH = 100;
+export const ENEMY_COUNT = 10;
+export const PLAYER_MAX_HEALTH = 200;
 
 // Spiltilstand
 export let gameState = 'start';

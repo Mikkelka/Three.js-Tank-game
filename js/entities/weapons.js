@@ -303,8 +303,8 @@ export function spawnWeaponPickup() {
     
     while (!validPosition && attempts < 20) {
         attempts++;
-        x = (Math.random() - 0.5) * 80;
-        z = (Math.random() - 0.5) * 80;
+        x = (Math.random() - 0.5) * 175;
+        z = (Math.random() - 0.5) * 175;
         
         // Undgå at spawne for tæt på spilleren
         if (window.playerTank && Math.sqrt(x*x + z*z) < 15) continue;
@@ -322,6 +322,6 @@ export function spawnWeaponPickup() {
     }
     
     // Planlæg næste pickup spawn
-    const nextSpawnTime = 30000 + Math.random() * 30000; // Mellem 30-60 sekunder
+    const nextSpawnTime = 20000 + Math.random() * 30000; // Mellem 20-50 sekunder
     setTimeout(spawnWeaponPickup, nextSpawnTime);
 }

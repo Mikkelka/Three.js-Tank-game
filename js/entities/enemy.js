@@ -3,7 +3,7 @@ import { createTank } from './tank.js';
 import { createProjectile } from './projectile.js';
 import { ENEMY_COUNT } from '../game.js';
 import { updateEnemyCount } from '../ui.js';
-import { checkObstacleCollision } from './obstacles.js';
+import { checkObstacleCollision, obstacles } from './obstacles.js';
 
 // Genbrugelige vektorer
 const tempVec3 = new THREE.Vector3();
@@ -34,8 +34,8 @@ export function createEnemies() {
         // Undgå at spawne inden i forhindringer (med maks forsøg)
         while (!validPosition && attempts < 20) {
             attempts++;
-            x = (Math.random() - 0.5) * 80;
-            z = (Math.random() - 0.5) * 80;
+            x = (Math.random() - 0.5) * 175;  // Opdateret til større bane
+            z = (Math.random() - 0.5) * 175;  // Opdateret til større bane
             
             // Undgå at spawne for tæt på spilleren
             if (Math.sqrt(x*x + z*z) < 15) continue;
@@ -53,6 +53,25 @@ export function createEnemies() {
                 }
             }
             if (tooCloseToOtherEnemies) continue;
+            
+            // Undgå at spawne inden i bygninger
+            let insideBuilding = false;
+            for (const obstacle of obstacles) {
+                if (obstacle.userData && obstacle.userData.isBuilding) {
+                    const building = obstacle;
+                    const bx = building.position.x;
+                    const bz = building.position.z;
+                    const bWidth = building.userData.width;
+                    const bDepth = building.userData.depth;
+                    
+                    if (x > bx - bWidth/2 - 3 && x < bx + bWidth/2 + 3 &&
+                        z > bz - bDepth/2 - 3 && z < bz + bDepth/2 + 3) {
+                        insideBuilding = true;
+                        break;
+                    }
+                }
+            }
+            if (insideBuilding) continue;
             
             // Hvis vi når hertil, er positionen gyldig
             validPosition = true;

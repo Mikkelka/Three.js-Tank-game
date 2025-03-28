@@ -9,40 +9,11 @@ export const OBSTACLE_TYPES = {
     BOUNDARY: 'boundary'
 };
 
+// Antallet af bygninger at generere
+export const BUILDING_COUNT = 4;
+
 // Liste over alle forhindringer
 export let obstacles = [];
-
-// Opret en mur
-function createWall(x, y, z, width, height, depth) {
-    const geometry = new THREE.BoxGeometry(width, height, depth);
-    const material = new THREE.MeshStandardMaterial({ 
-        color: 0x8B4513,
-        roughness: 0.7 
-    });
-    
-    const wall = new THREE.Mesh(geometry, material);
-    wall.position.set(x, y + height/2, z);
-    
-    // Gem værdier for hurtigere kollisionsberegning
-    const collisionData = {
-        minX: x - width/2,
-        maxX: x + width/2,
-        minZ: z - depth/2,
-        maxZ: z + depth/2
-    };
-    
-    wall.userData = {
-        type: OBSTACLE_TYPES.WALL,
-        solid: true,
-        destructible: false,
-        collision: collisionData
-    };
-    
-    scene.add(wall);
-    obstacles.push(wall);
-    
-    return wall;
-}
 
 // Opret en mur med anden farve (til grænser)
 function createBoundaryWall(x, y, z, width, height, depth) {
@@ -182,9 +153,114 @@ function createWater(x, z, width, depth) {
     return water;
 }
 
+// Opret en bygning
+function createBuilding(x, y, z, width, height, depth, color = 0x8B4513) {
+    const geometry = new THREE.BoxGeometry(width, height, depth);
+    const material = new THREE.MeshStandardMaterial({ 
+        color: color,
+        roughness: 0.7 
+    });
+    
+    const building = new THREE.Mesh(geometry, material);
+    building.position.set(x, y + height/2, z);
+    
+    // Gem værdier for hurtigere kollisionsberegning
+    const collisionData = {
+        minX: x - width/2,
+        maxX: x + width/2,
+        minZ: z - depth/2,
+        maxZ: z + depth/2
+    };
+    
+    building.userData = {
+        type: OBSTACLE_TYPES.WALL,
+        solid: true,
+        destructible: false,
+        collision: collisionData,
+        isBuilding: true,  // Markør til identifikation
+        width: width,
+        depth: depth
+    };
+    
+    scene.add(building);
+    obstacles.push(building);
+    
+    return building;
+}
+
+// Generér tilfældige bygninger
+function createRandomBuildings(count) {
+    const buildings = [];
+    const buildingMinDistance = 25; // Minimum afstand mellem bygninger
+    const playerClearRadius = 20; // Hold området omkring spilleren fri
+    
+    const buildingColors = [
+        0x8B4513, // Brun
+        0x696969, // Mørkegrå
+        0xA0522D, // Sienna
+        0xCD853F, // Peru
+        0xD2B48C  // Tan
+    ];
+    
+    for (let i = 0; i < count; i++) {
+        let validPosition = false;
+        let attempts = 0;
+        let x, z, width, depth, height, color;
+        
+        // Prøv at finde en valid position
+        while (!validPosition && attempts < 30) {
+            attempts++;
+            
+            // Generer tilfældige egenskaber
+            x = (Math.random() - 0.5) * 110;
+            z = (Math.random() - 0.5) * 110;
+            width = 8 + Math.random() * 12; // Bredde mellem 8 og 20
+            depth = 8 + Math.random() * 12; // Dybde mellem 8 og 20
+            height = 4 + Math.random() * 7; // Højde mellem 4 og 11
+            color = buildingColors[Math.floor(Math.random() * buildingColors.length)];
+            
+            // Tjek afstand til spillerens startposition
+            if (Math.sqrt(x*x + z*z) < playerClearRadius) {
+                continue;
+            }
+            
+            // Tjek overlap med andre bygninger
+            let overlapWithOther = false;
+            for (const building of buildings) {
+                const otherX = building.position.x;
+                const otherZ = building.position.z;
+                const otherWidth = building.userData.width;
+                const otherDepth = building.userData.depth;
+                
+                // Beregn afstanden mellem bygningernes midte
+                const distX = Math.abs(x - otherX);
+                const distZ = Math.abs(z - otherZ);
+                
+                // Tjek om bygningerne er for tæt på hinanden
+                if (distX < (width + otherWidth) / 2 + buildingMinDistance && 
+                    distZ < (depth + otherDepth) / 2 + buildingMinDistance) {
+                    overlapWithOther = true;
+                    break;
+                }
+            }
+            
+            if (!overlapWithOther) {
+                validPosition = true;
+            }
+        }
+        
+        if (validPosition) {
+            const building = createBuilding(x, 0, z, width, height, depth, color);
+            buildings.push(building);
+        }
+    }
+    
+    return buildings;
+}
+
 // Opret grænsemure rundt om banen
 function createBoundaryWalls() {
-    const ARENA_SIZE = 100;  // Samme størrelse som jordplanet
+    const ARENA_SIZE = 195;  // Samme størrelse som jordplanet, nu 25% større
     const WALL_HEIGHT = 5;
     const WALL_THICKNESS = 2;
     
@@ -206,16 +282,13 @@ export function createObstacles() {
     // Opret grænsemure først
     createBoundaryWalls();
     
-    // Opret mure der danner et lille fort
-    createWall(-15, 0, -15, 10, 3, 1);  // Nord mur
-    createWall(-20, 0, -10, 1, 3, 10);  // Vest mur
-    createWall(-15, 0, -5, 10, 3, 1);   // Syd mur
-    createWall(-9.5, 0, -10, 1, 3, 10); // Øst mur
+    // Opret bygninger
+    createRandomBuildings(BUILDING_COUNT);
     
     // Opret nogle træer - begrænser antallet for bedre performance
-    for (let i = 0; i < 8; i++) {
-        let x = (Math.random() - 0.5) * 80;
-        let z = (Math.random() - 0.5) * 80;
+    for (let i = 0; i < 50; i++) {
+        let x = (Math.random() - 0.5) * 180;
+        let z = (Math.random() - 0.5) * 180;
         
         // Undgå at placere for tæt på spilleren
         if (Math.sqrt(x*x + z*z) < 15) {
@@ -223,8 +296,25 @@ export function createObstacles() {
             continue;
         }
         
-        // Undgå at placere inden i fortet
-        if (x > -20 && x < -10 && z > -15 && z < -5) {
+        // Undgå at placere inde i bygninger
+        let insideBuilding = false;
+        for (const obstacle of obstacles) {
+            if (obstacle.userData.isBuilding) {
+                const building = obstacle;
+                const bx = building.position.x;
+                const bz = building.position.z;
+                const bWidth = building.userData.width;
+                const bDepth = building.userData.depth;
+                
+                if (x > bx - bWidth/2 - 2 && x < bx + bWidth/2 + 2 &&
+                    z > bz - bDepth/2 - 2 && z < bz + bDepth/2 + 2) {
+                    insideBuilding = true;
+                    break;
+                }
+            }
+        }
+        
+        if (insideBuilding) {
             i--; // Prøv igen
             continue;
         }
@@ -233,13 +323,33 @@ export function createObstacles() {
     }
     
     // Opret nogle sten - begrænser antallet for bedre performance
-    for (let i = 0; i < 10; i++) {
-        const x = (Math.random() - 0.5) * 90;
-        const z = (Math.random() - 0.5) * 90;
+    for (let i = 0; i < 40; i++) {
+        const x = (Math.random() - 0.5) * 175;
+        const z = (Math.random() - 0.5) * 175;
         const size = 0.5 + Math.random() * 1.5; 
         
         // Undgå at placere for tæt på spilleren
         if (Math.sqrt(x*x + z*z) < 12) continue;
+        
+        // Undgå at placere inde i bygninger
+        let insideBuilding = false;
+        for (const obstacle of obstacles) {
+            if (obstacle.userData && obstacle.userData.isBuilding) {
+                const building = obstacle;
+                const bx = building.position.x;
+                const bz = building.position.z;
+                const bWidth = building.userData.width;
+                const bDepth = building.userData.depth;
+                
+                if (x > bx - bWidth/2 - 2 && x < bx + bWidth/2 + 2 &&
+                    z > bz - bDepth/2 - 2 && z < bz + bDepth/2 + 2) {
+                    insideBuilding = true;
+                    break;
+                }
+            }
+        }
+        
+        if (insideBuilding) continue;
         
         createRock(x, z, size);
     }
@@ -254,7 +364,7 @@ export function checkObstacleCollision(position, radius = 2) {
     const z = position.z;
     
     // Først tjek om vi er inden for banen - hurtigste check først
-    if (x < -49 || x > 49 || z < -49 || z > 49) {
+    if (x < -62 || x > 62 || z < -62 || z > 62) {  // Opdateret til større bane
         return true;
     }
     
